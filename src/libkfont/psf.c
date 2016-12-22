@@ -19,6 +19,9 @@
 #define PSF1_MODE_HAS_SEQ 0x04
 #define PSF1_MAXMODE 0x05 // TODO(dmage): why not 0x07?
 
+#define PSF1_SEPARATOR 0xFFFF
+#define PSF1_START_SEQ 0xFFFE
+
 /* bits used in flags */
 #define PSF2_HAS_UNICODE_TABLE 0x01
 
@@ -64,6 +67,17 @@ static inline uint32_t peek_uint32(uint8_t *data)
 #else
 #error TODO
 #endif
+}
+
+static inline bool read_uint16(struct kfont_slice *slice, uint16_t *out)
+{
+	if (slice->ptr + sizeof(uint16_t) > slice->end) {
+		return false;
+	}
+
+	*out = peek_uint16(slice->ptr);
+	slice->ptr += sizeof(uint16_t);
+	return true;
 }
 
 static inline bool read_uint32(struct kfont_slice *slice, uint32_t *out)
@@ -155,44 +169,64 @@ static bool kfont_read_psf2_header(struct kfont_slice *slice, struct kfont_psf2_
 
 static bool kfont_read_unicode_map(struct kfont_slice *slice, unsigned int font_pos, enum kfont_version version, struct kfont_unicode_pair **out)
 {
-	if (version != KFONT_VERSION_PSF2) {
-		abort(); // TODO(dmage): handle PSF1
-	}
+	if (version == KFONT_VERSION_PSF1) {
+		while (1) {
+			uint16_t uc;
+			if (!read_uint16(slice, &uc)) {
+				return false;
+			}
+			if (uc == PSF1_START_SEQ) {
+				printf("kfont_read_unicode_map %d: <start seq>\n", font_pos);
+				abort(); // TODO(dmage): handle <seq>*
+			}
+			if (uc == PSF1_SEPARATOR) {
+				break;
+			}
 
-	while (1) {
-		if (slice->ptr == slice->end) {
-			return false;
-		}
-		if (*slice->ptr == PSF2_SEPARATOR) {
-			slice->ptr++;
-			// printf("kfont_read_unicode_map %d: %ld\n", font_pos, slice->ptr - start + 1);
-			break;
-		}
-		if (*slice->ptr == PSF2_START_SEQ) {
-			printf("kfont_read_unicode_map %d: <start seq>\n", font_pos);
-			slice->ptr++;
-			continue;
-		}
-		uint32_t rune;
-		if (!read_utf8_rune(slice, &rune)) {
-			return false;
-		}
-		if (rune == INVALID_RUNE) {
-			printf("kfont_read_unicode_map %d: <invalid utf8 sequence>\n", font_pos);
-			abort(); // TODO(dmage)
-		}
-		// printf("kfont_read_unicode_map %d: U+%04X\n", font_pos, rune);
+			struct kfont_unicode_pair *pair = xmalloc(sizeof(struct kfont_unicode_pair));
 
-		// TODO(dmage): find font with PSF2_START_SEQ and write rest of the code
+			pair->font_pos   = font_pos;
+			pair->seq_length = 1;
+			pair->seq[0]     = uc;
 
-		struct kfont_unicode_pair *pair = xmalloc(sizeof(struct kfont_unicode_pair));
+			pair->next = *out;
+			*out       = pair;
+		}
+	} else if (version == KFONT_VERSION_PSF2) {
+		while (1) {
+			if (slice->ptr == slice->end) {
+				return false;
+			}
+			if (*slice->ptr == PSF2_START_SEQ) {
+				printf("kfont_read_unicode_map %d: <start seq>\n", font_pos);
+				abort(); // TODO(dmage): handle <seq>*
+			}
+			if (*slice->ptr == PSF2_SEPARATOR) {
+				slice->ptr++;
+				break;
+			}
 
-		pair->font_pos   = font_pos;
-		pair->seq_length = 1;
-		pair->seq[0]     = rune;
+			uint32_t rune;
+			if (!read_utf8_rune(slice, &rune)) {
+				return false;
+			}
+			if (rune == INVALID_RUNE) {
+				printf("kfont_read_unicode_map %d: <invalid utf8 sequence>\n", font_pos);
+				abort(); // TODO(dmage)
+			}
 
-		pair->next = *out;
-		*out       = pair;
+			struct kfont_unicode_pair *pair = xmalloc(sizeof(struct kfont_unicode_pair));
+
+			pair->font_pos   = font_pos;
+			pair->seq_length = 1;
+			pair->seq[0]     = rune;
+
+			pair->next = *out;
+			*out       = pair;
+		}
+	} else {
+		printf("kfont_read_unicode_map %d: unknown font version\n", font_pos);
+		abort();
 	}
 	return true;
 }
@@ -221,18 +255,12 @@ bool kfont_read_file(FILE *f, struct kfont *font)
 		}
 	}
 
-	font->content.data = buf;
-	font->content.size = n;
+	font->content.data     = buf;
+	font->content.size     = n;
 	font->unicode_map_head = NULL;
 
 	return true;
 }
-
-// static void kfont_add_unicode_pair(struct kfont *font, struct kfont_unicode_pair *up)
-// {
-// 	up->next = kfont->unicode_map_head;
-// 	kfont->unicode_map_head = up;
-// }
 
 static void kfont_free_string(struct kfont_string *string)
 {
@@ -244,6 +272,7 @@ static void kfont_free_string(struct kfont_string *string)
 void kfont_free(struct kfont *font)
 {
 	kfont_free_string(&font->content);
+	// TODO(dmage): free unicode map
 }
 
 enum kfont_error kfont_parse_psf_font(struct kfont *font)
