@@ -1,6 +1,13 @@
+/**
+ * @file kfont.h
+ * @brief This file should be considered as libkfont's public API.
+ */
 #ifndef KFONT_H
 #define KFONT_H
 
+/**
+ * @brief Error codes.
+ */
 enum kfont_error {
 	KFONT_ERROR_SUCCESS                  = 0,
 	KFONT_ERROR_BAD_MAGIC                = -1,
@@ -16,21 +23,85 @@ enum kfont_error {
 	KFONT_ERROR_FONT_LENGTH_TOO_BIG      = -11,
 };
 
-enum kfont_version {
-	KFONT_VERSION_PSF1 = 1,
-	KFONT_VERSION_PSF2 = 2,
+/**
+ * @brief TODO kfont_parse_options
+ */
+struct kfont_parse_options {
+	uint8_t codepage; /* iunit; 0 - reject, 8, 14, 16 */
+	int (*findfile)(const char *fnam, char **fp);
+	void (*free_findfile)(char *fp);
 };
 
-struct kfont_string {
-	uint8_t *data;
-	size_t size;
-};
+/**
+ * @brief Opaque font descriptor.
+ */
+typedef struct kfont_handler *kfont_handler_t;
 
-struct kfont_slice {
-	uint8_t *ptr;
-	uint8_t *end;
-};
+/**
+ * @brief Loads a font from the given file.
+ * If the font is loaded, it should be freed using @ref kfont_free.
+ */
+extern enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opts, kfont_handler_t *font);
 
+/**
+ * @brief TODO kfont_parse
+ */
+extern enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse_options opts, kfont_handler_t *font);
+
+/**
+ * @brief Combines two fonts. Resources associated with the font @p other would be released.
+ */
+extern enum kfont_error kfont_append(kfont_handler_t *font, kfont_handler_t *other);
+
+/**
+ * @brief Releases resources associated with the font.
+ */
+extern void kfont_free(kfont_handler_t *font);
+
+/**
+ * @brief Returns the characters' width.
+ */
+extern unsigned int kfont_get_width(kfont_handler_t *font);
+
+/**
+ * @brief Returns the characters' height.
+ */
+extern unsigned int kfont_get_height(kfont_handler_t *font);
+
+/**
+ * @brief Returns the number of characters in the font.
+ */
+extern unsigned int kfont_get_char_count(kfont_handler_t *font);
+
+/**
+ * @brief Returns a buffer with a symbol representation.
+ *
+ * @code
+ *  01234v67
+ * 0-||||---
+ * >||--|x--
+ * 2----||--
+ * 3---||---
+ * 4--||----
+ * 5--------
+ * 6--||----
+ * 7--------
+ *
+ * row = 1
+ * col = 5
+ *
+ * pitch = ceil(width/8)
+ * byte_idx = row*pitch + floor(col/8)
+ * bit_idx = col%8
+ *
+ * x = BIT_VALUE(buf, col, row) = (buf[byte_idx] & (0x80 >> bit_idx))
+ * @endcode
+ */
+extern unsigned char *kfont_get_char_buffer(kfont_handler_t *font, unsigned int index);
+
+/**
+ * @brief TODO kfont_unicode_pair
+ */
 struct kfont_unicode_pair {
 	struct kfont_unicode_pair *next;
 	unsigned int font_pos;
@@ -38,21 +109,9 @@ struct kfont_unicode_pair {
 	uint32_t seq[1];
 };
 
-struct kfont {
-	enum kfont_version version;
-
-	uint32_t font_len;
-	uint32_t font_offset;
-	uint32_t font_width;
-	uint32_t char_size;
-
-	struct kfont_unicode_pair *unicode_map_head;
-
-	struct kfont_string content;
-};
-
-bool kfont_read_file(FILE *f, struct kfont *font);
-enum kfont_error kfont_parse_psf_font(struct kfont *font);
-void kfont_free(struct kfont *font);
+/**
+ * @brief TODO kfont_get_unicode_map
+ */
+extern struct kfont_unicode_pair *kfont_get_unicode_map(kfont_handler_t *font);
 
 #endif /* KFONT_H */
