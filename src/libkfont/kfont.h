@@ -71,40 +71,40 @@ enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse
 /**
  * @brief Combines two fonts. Resources associated with the font @p other would be released.
  */
-enum kfont_error kfont_append(kfont_handler_t *font, kfont_handler_t *other);
+enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other);
 
 /**
  * @brief Releases resources associated with the font.
  */
-void kfont_free(kfont_handler_t *font);
+void kfont_free(kfont_handler_t font);
 
 /**
  * @brief Returns the characters' width.
  */
-unsigned int kfont_get_width(kfont_handler_t *font);
+unsigned int kfont_get_width(kfont_handler_t font);
 
 /**
  * @brief Returns the characters' height.
  */
-unsigned int kfont_get_height(kfont_handler_t *font);
+unsigned int kfont_get_height(kfont_handler_t font);
 
 /**
  * @brief Returns the number of characters in the font.
  */
-unsigned int kfont_get_char_count(kfont_handler_t *font);
+unsigned int kfont_get_char_count(kfont_handler_t font);
 
 /**
  * @brief Returns a buffer with a symbol representation.
  *
  * @code
  *  01234v67
- * 0-||||---
- * >||--|x--
- * 2----||--
- * 3---||---
- * 4--||----
+ * 0-####---
+ * >##--#x--
+ * 2----##--
+ * 3---##---
+ * 4--##----
  * 5--------
- * 6--||----
+ * 6--##----
  * 7--------
  *
  * row = 1
@@ -117,25 +117,48 @@ unsigned int kfont_get_char_count(kfont_handler_t *font);
  * x = BIT_VALUE(buf, col, row) = (buf[byte_idx] & (0x80 >> bit_idx))
  * @endcode
  */
-unsigned char *kfont_get_char_buffer(kfont_handler_t *font, unsigned int index);
+unsigned char *kfont_get_char_buffer(kfont_handler_t font, unsigned int font_pos);
 
 /**
  * @brief A linked list of pairs (font_pos, seq[len]).
  */
 struct kfont_unimap_node {
+	/**
+	 * A next element of the linked list or NULL.
+	 */
 	struct kfont_unimap_node *next;
+
+	/**
+	 * A font position.
+	 */
 	unsigned int font_pos;
+
+	/**
+	 * A length of the @ref seq.
+	 */
 	unsigned int len;
+
+	/**
+	 * A sequence of the Unicode characters represented by the font position @ref font_pos.
+	 */
 	uint32_t seq[];
 };
 
 /**
- * @brief TODO kfont_get_unicode_map
+ * @brief Returns a Unicode description of the glyphs.
+ * The result is associated with the font and should not be freed.
  */
 struct kfont_unimap_node *kfont_get_unicode_map(kfont_handler_t *font);
 
+/**
+ * @brief Loads a unicode map from the given file.
+ * If the unicode map is loaded, it should be freed using @ref kfont_free_unimap.
+ */
 enum kfont_error kfont_load_unimap(const char *filename, struct kfont_unimap_node **unimap);
 
+/**
+ * @brief Releases resources associated with the unicode map.
+ */
 void kfont_free_unimap(struct kfont_unimap_node *unimap);
 
 #endif /* KFONT_H */
