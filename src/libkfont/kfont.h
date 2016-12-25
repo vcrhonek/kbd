@@ -1,6 +1,6 @@
 /**
  * @file kfont.h
- * @brief This file should be considered as libkfont's public API.
+ * @brief This file is a part of libkfont's public API.
  */
 #ifndef KFONT_H
 #define KFONT_H
@@ -51,7 +51,7 @@ struct kfont_parse_options {
 };
 
 /**
- * @brief Opaque font descriptor.
+ * @brief An opaque font descriptor.
  */
 typedef struct kfont_handler *kfont_handler_t;
 
@@ -120,18 +120,22 @@ unsigned int kfont_get_char_count(kfont_handler_t *font);
 unsigned char *kfont_get_char_buffer(kfont_handler_t *font, unsigned int index);
 
 /**
- * @brief TODO kfont_unicode_pair
+ * @brief A linked list of pairs (font_pos, seq[len]).
  */
-struct kfont_unicode_pair {
-	struct kfont_unicode_pair *next;
+struct kfont_unimap_node {
+	struct kfont_unimap_node *next;
 	unsigned int font_pos;
-	uint32_t seq_length;
-	uint32_t seq[1];
+	unsigned int len;
+	uint32_t seq[];
 };
 
 /**
  * @brief TODO kfont_get_unicode_map
  */
-struct kfont_unicode_pair *kfont_get_unicode_map(kfont_handler_t *font);
+struct kfont_unimap_node *kfont_get_unicode_map(kfont_handler_t *font);
+
+enum kfont_error kfont_load_unimap(const char *filename, struct kfont_unimap_node **unimap);
+
+void kfont_free_unimap(struct kfont_unimap_node *unimap);
 
 #endif /* KFONT_H */
