@@ -94,7 +94,7 @@ unsigned int kfont_get_height(kfont_handler_t font);
 unsigned int kfont_get_char_count(kfont_handler_t font);
 
 /**
- * @brief Returns a buffer with a symbol representation.
+ * @brief Returns a buffer with a symbol representation. It should not be freed.
  *
  * @code
  *  01234v67
@@ -114,7 +114,7 @@ unsigned int kfont_get_char_count(kfont_handler_t font);
  * byte_idx = row*pitch + floor(col/8)
  * bit_idx = col%8
  *
- * x = BIT_VALUE(buf, col, row) = (buf[byte_idx] & (0x80 >> bit_idx))
+ * x = (buf[byte_idx] & (0x80 >> bit_idx))
  * @endcode
  */
 unsigned char *kfont_get_char_buffer(kfont_handler_t font, unsigned int font_pos);
