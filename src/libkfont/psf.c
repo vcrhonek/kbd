@@ -63,8 +63,8 @@ struct kfont_handler {
 
 static bool kfont_blob_read(FILE *f, unsigned char **buffer, size_t *size)
 {
-	size_t buflen = MAXFONTSIZE / 4; /* actually an arbitrary value */
-	size_t n      = 0;
+	size_t buflen      = MAXFONTSIZE / 4; /* actually an arbitrary value */
+	size_t n           = 0;
 	unsigned char *buf = xmalloc(buflen);
 
 	while (1) {
@@ -87,7 +87,7 @@ static bool kfont_blob_read(FILE *f, unsigned char **buffer, size_t *size)
 	}
 
 	*buffer = buf;
-	*size = n;
+	*size   = n;
 
 	return true;
 }
@@ -317,11 +317,11 @@ static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t 
 	/* TODO: check char_siez */
 	/* TODO: check char_count */
 
-	font->width = 8;
-	font->height = psf1_header.char_size;
-	font->char_size = psf1_header.char_size;
+	font->width      = 8;
+	font->height     = psf1_header.char_size;
+	font->char_size  = psf1_header.char_size;
 	font->char_count = (psf1_header.mode & PSF1_MODE512 ? 512 : 256);
-	font->glyphs = p->ptr;
+	font->glyphs     = p->ptr;
 
 	/* TODO(dmage): load unimap */
 
@@ -365,17 +365,17 @@ static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t 
 		// FIXME(dmage): another error code
 		return KFONT_ERROR_CHAR_SIZE_ZERO;
 	}
-	uint32_t pitch = (psf2_header.width - 1)/8 + 1;
+	uint32_t pitch = (psf2_header.width - 1) / 8 + 1;
 	if (psf2_header.height != psf2_header.char_size / pitch) {
 		// FIXME(dmage): another error code
 		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
 	}
 
-	font->width = psf2_header.width;
-	font->height = psf2_header.height;
-	font->char_size = psf2_header.char_size;
+	font->width      = psf2_header.width;
+	font->height     = psf2_header.height;
+	font->char_size  = psf2_header.char_size;
 	font->char_count = psf2_header.length;
-	font->glyphs = begin + psf2_header.header_size;
+	font->glyphs     = begin + psf2_header.header_size;
 
 	/* TODO(dmage): load unimap */
 
@@ -389,9 +389,10 @@ enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse
 	p.end = buf + size;
 
 	*font = xmalloc(sizeof(struct kfont_handler));
+
 	(*font)->unimap_head = NULL;
 	(*font)->unimap_tail = NULL;
-	(*font)->blob = NULL;
+	(*font)->blob        = NULL;
 
 	enum kfont_error err = kfont_parse_psf2(&p, *font);
 	if (err != KFONT_ERROR_BAD_MAGIC) {

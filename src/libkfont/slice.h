@@ -8,11 +8,11 @@
 #define INVALID_CODE_POINT INT32_MAX
 
 #if CHAR_BIT != 8
-# error CHAR_BIT != 8, I have no idea how to read octets on this system.
+#error CHAR_BIT != 8, I have no idea how to read octets on this system.
 #endif
 
 struct kfont_slice {
-    unsigned char *ptr;
+	unsigned char *ptr;
 	unsigned char *end;
 };
 
@@ -62,7 +62,6 @@ static inline bool read_uint16_magic(struct kfont_slice *slice, uint16_t magic)
 	slice->ptr += sizeof(uint16_t);
 	return true;
 }
-
 
 static inline bool read_uint32_magic(struct kfont_slice *slice, uint32_t magic)
 {
