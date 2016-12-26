@@ -119,7 +119,7 @@ uint32_t kfont_get_char_count(kfont_handler_t font);
  * x = (buf[byte_idx] & (0x80 >> bit_idx))
  * @endcode
  */
-unsigned char *kfont_get_char_buffer(kfont_handler_t font, uint32_t font_pos);
+const unsigned char *kfont_get_char_buffer(kfont_handler_t font, uint32_t font_pos);
 
 /**
  * @brief A linked list of pairs (font_pos, seq[len]).

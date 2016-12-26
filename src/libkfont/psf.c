@@ -51,6 +51,7 @@ struct kfont_psf2_header {
 struct kfont_handler {
 	uint32_t width;
 	uint32_t height;
+	uint32_t pitch;
 	uint32_t char_size;
 	uint32_t char_count;
 	const unsigned char *glyphs;
@@ -393,12 +394,7 @@ static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t 
 		return KFONT_ERROR_CHAR_SIZE_ZERO;
 	}
 
-	if (psf2_header.width > UINT32_MAX - 7) {
-		// FIXME(dmage): another error code
-		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
-	}
-
-	uint32_t pitch = (psf2_header.width + 7)/8;
+	uint32_t pitch = (psf2_header.width - 1)/8 + 1;
 	if (psf2_header.height != psf2_header.char_size / pitch) {
 		// FIXME(dmage): another error code
 		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
@@ -406,6 +402,7 @@ static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t 
 
 	font->width = psf2_header.width;
 	font->height = psf2_header.height;
+	font->pitch = pitch;
 	font->char_size = psf2_header.char_size;
 	font->char_count = psf2_header.length;
 	font->glyphs = begin + psf2_header.header_size;
@@ -446,4 +443,22 @@ void kfont_free(kfont_handler_t font)
 uint32_t kfont_get_width(kfont_handler_t font)
 {
 	return font->width;
+}
+
+uint32_t kfont_get_height(kfont_handler_t font)
+{
+	return font->height;
+}
+
+uint32_t kfont_get_char_count(kfont_handler_t font)
+{
+	return font->char_count;
+}
+
+const unsigned char *kfont_get_char_buffer(kfont_handler_t font, uint32_t font_pos)
+{
+	if (font_pos >= font->char_count) {
+		return NULL;
+	}
+	return font->glyphs + font_pos * font->char_size;
 }

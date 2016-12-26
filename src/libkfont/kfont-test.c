@@ -37,29 +37,29 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	uint32_t width = kfont_get_width(font);
+	uint32_t height = kfont_get_height(font);
+	uint32_t char_count = kfont_get_char_count(font);
+
 	printf("kfont data:\n");
-	printf("width       : %lu\n", (unsigned long)kfont_get_width(font));
-	// printf("char size   : %lu\n", (unsigned long)font.char_size);
-	// printf("has table   : %u\n",  font.unicode_map_head != NULL);
-	// printf("font offset : %lu\n", (unsigned long)font.font_offset);
-	// printf("font width  : %lu\n", (unsigned long)font.font_width);
-	//
-	// if (font.font_width > 0 && font.font_width <= 32) {
-	// 	int row_size = (font.font_width + 7) / 8;
-	// 	for (unsigned int font_pos = 0; font_pos < font.font_len; font_pos++) {
-	// 		printf("position %u:\n", font_pos);
-	// 		for (unsigned int row = 0; (row + 1) * row_size <= font.char_size; row++) {
-	// 			printf("|");
-	// 			for (uint32_t col = 0; col < font.font_width; col++) {
-	// 				int offset = font.font_offset + font_pos * font.char_size + row * row_size;
-	// 				int value = (font.content.data[offset + col / 8] << (col % 8)) & 0x80;
-	// 				draw_bit(value);
-	// 			}
-	// 			printf("|\n");
-	// 		}
-	// 	}
-	// }
-	//
+	printf("width       : %lu\n", (unsigned long)width);
+	printf("height      : %lu\n", (unsigned long)height);
+	printf("char_count  : %lu\n", (unsigned long)char_count);
+
+	int row_size = (width + 7) / 8;
+	for (unsigned int font_pos = 0; font_pos < char_count; font_pos++) {
+		printf("position %u:\n", font_pos);
+		const unsigned char *glyph = kfont_get_char_buffer(font, font_pos);
+		for (unsigned int row = 0; row < height; row++) {
+			printf("|");
+			for (uint32_t col = 0; col < width; col++) {
+				int value = glyph[row * row_size + col / 8] & (0x80 >> (col % 8));
+				draw_bit(value);
+			}
+			printf("|\n");
+		}
+	}
+
 	// struct kfont_unicode_pair *pair = font.unicode_map_head;
 	// for ( ; pair; pair = pair->next) {
 	// 	for (uint32_t i = 0; i < pair->seq_length; i++) {
