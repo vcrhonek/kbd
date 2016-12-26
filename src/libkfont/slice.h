@@ -58,6 +58,37 @@ static inline bool read_uint32(struct kfont_slice *slice, uint32_t *out)
 	return true;
 }
 
+static inline bool read_uint16_magic(struct kfont_slice *slice, uint16_t magic)
+{
+	if (slice->ptr + sizeof(uint16_t) > slice->end) {
+		return false;
+	}
+
+	uint16_t val = peek_uint16(slice->ptr);
+	if (val != magic) {
+		return false;
+	}
+
+	slice->ptr += sizeof(uint16_t);
+	return true;
+}
+
+
+static inline bool read_uint32_magic(struct kfont_slice *slice, uint32_t magic)
+{
+	if (slice->ptr + sizeof(uint32_t) > slice->end) {
+		return false;
+	}
+
+	uint32_t val = peek_uint32(slice->ptr);
+	if (val != magic) {
+		return false;
+	}
+
+	slice->ptr += sizeof(uint32_t);
+	return true;
+}
+
 static inline bool read_utf8_rune(struct kfont_slice *slice, uint32_t *out)
 {
 	if (slice->ptr + 1 > slice->end) {

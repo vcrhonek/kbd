@@ -314,15 +314,32 @@ enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opt
 		return KFONT_ERROR_ERRNO;
 	}
 
-	unsigned char *buffer;
+	unsigned char *buf;
 	size_t size;
-	if (!kfont_blob_read(f, &buffer, &size)) {
+	if (!kfont_blob_read(f, &buf, &size)) {
 		fclose(f);
 		return KFONT_ERROR_READ;
 	}
 
 	fclose(f);
 
+	/* err = */ kfont_parse(buf, size, opts, font);
+
 	printf("%s: %d\n", filename, size);
 	return KFONT_ERROR_SUCCESS;
+}
+
+enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse_options opts, kfont_handler_t *font)
+{
+	struct kfont_slice slice;
+	slice.ptr = buf;
+	slice.end = buf + size;
+
+	if (read_uint32_magic(&slice, PSF2_MAGIC)) {
+		printf("PSF2\n");
+	}
+}
+
+void kfont_free(kfont_handler_t font)
+{
 }

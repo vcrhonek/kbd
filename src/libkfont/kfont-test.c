@@ -87,6 +87,6 @@ int main(int argc, char *argv[])
 	// 	}
 	// 	printf("-> %u\n", pair->font_pos);
 	// }
-	//
-	// kfont_free(&font);
+
+	kfont_free(font);
 }
