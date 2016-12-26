@@ -33,6 +33,21 @@
 #define PSF2_SEPARATOR 0xFF
 #define PSF2_START_SEQ 0xFE
 
+struct kfont_psf1_header {
+	uint8_t mode;      /* PSF font mode */
+	uint8_t char_size; /* character size */
+};
+
+struct kfont_psf2_header {
+	uint32_t version;
+	uint32_t header_size; /* offset of bitmaps in file */
+	uint32_t flags;
+	uint32_t length;        /* number of glyphs */
+	uint32_t char_size;     /* number of bytes for each character */
+	uint32_t height, width; /* max dimensions of glyphs */
+	                        /* charsize = height * ((width + 7) / 8) */
+};
+
 struct kfont_handler {
 	unsigned char *blob;
 };
@@ -68,21 +83,6 @@ static bool kfont_blob_read(FILE *f, unsigned char **buffer, size_t *size)
 	return true;
 }
 
-// struct kfont_psf1_header {
-// 	uint8_t mode;      /* PSF font mode */
-// 	uint8_t char_size; /* character size */
-// };
-//
-// struct kfont_psf2_header {
-// 	uint32_t version;
-// 	uint32_t header_size; /* offset of bitmaps in file */
-// 	uint32_t flags;
-// 	uint32_t length;        /* number of glyphs */
-// 	uint32_t char_size;     /* number of bytes for each character */
-// 	uint32_t height, width; /* max dimensions of glyphs */
-// 	                        /* charsize = height * ((width + 7) / 8) */
-// };
-//
 // static bool kfont_read_psf1_header(struct kfont_slice *slice, struct kfont_psf1_header *header)
 // {
 // 	if (slice->ptr + 2 > slice->end) {
@@ -93,17 +93,6 @@ static bool kfont_blob_read(FILE *f, unsigned char **buffer, size_t *size)
 // 	header->char_size = slice->ptr[1];
 // 	slice->ptr += 2;
 // 	return true;
-// }
-//
-// static bool kfont_read_psf2_header(struct kfont_slice *slice, struct kfont_psf2_header *header)
-// {
-// 	return read_uint32(slice, &header->version) &&
-// 	       read_uint32(slice, &header->header_size) &&
-// 	       read_uint32(slice, &header->flags) &&
-// 	       read_uint32(slice, &header->length) &&
-// 	       read_uint32(slice, &header->char_size) &&
-// 	       read_uint32(slice, &header->height) &&
-// 	       read_uint32(slice, &header->width);
 // }
 //
 // static bool kfont_read_unicode_map(struct kfont_slice *slice, unsigned int font_pos, enum kfont_version version, struct kfont_unicode_pair **out)
@@ -339,20 +328,70 @@ enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opt
 	return KFONT_ERROR_SUCCESS;
 }
 
+static bool kfont_read_psf2_header(struct kfont_slice *p, struct kfont_psf2_header *header)
+{
+	return read_uint32(p, &header->version) &&
+	       read_uint32(p, &header->header_size) &&
+	       read_uint32(p, &header->flags) &&
+	       read_uint32(p, &header->length) &&
+	       read_uint32(p, &header->char_size) &&
+	       read_uint32(p, &header->height) &&
+	       read_uint32(p, &header->width);
+}
+
+static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t font)
+{
+	if (!read_uint32_magic(p, PSF2_MAGIC)) {
+		return KFONT_ERROR_BAD_MAGIC;
+	}
+
+	struct kfont_psf2_header psf2_header;
+	if (!kfont_read_psf2_header(p, &psf2_header)) {
+		return KFONT_ERROR_BAD_PSF2_HEADER;
+	}
+
+	// FIXME(dmage): remove these printfs
+	printf("PSF2\n");
+	printf("version     : %lu\n", (unsigned long)psf2_header.version);
+	printf("header size : %lu\n", (unsigned long)psf2_header.header_size);
+	printf("flags       : %lu\n", (unsigned long)psf2_header.flags);
+	printf("length      : %lu\n", (unsigned long)psf2_header.length);
+	printf("char size   : %lu\n", (unsigned long)psf2_header.char_size);
+	printf("height      : %lu\n", (unsigned long)psf2_header.height);
+	printf("width       : %lu\n", (unsigned long)psf2_header.width);
+
+	if (psf2_header.version > PSF2_MAXVERSION) {
+		return KFONT_ERROR_UNSUPPORTED_PSF2_VERSION;
+	}
+
+	// font->version     = KFONT_VERSION_PSF2;
+	// font->font_len    = psf2_header.length;
+	// font->char_size   = psf2_header.char_size;
+	// font->font_offset = psf2_header.header_size;
+	// font->font_width  = psf2_header.width;
+	// has_table         = (psf2_header.flags & PSF2_HAS_UNICODE_TABLE);
+	return KFONT_ERROR_SUCCESS;
+}
+
 enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse_options opts, kfont_handler_t *font)
 {
-	struct kfont_slice slice;
-	slice.ptr = buf;
-	slice.end = buf + size;
+	struct kfont_slice p;
+	p.ptr = buf;
+	p.end = buf + size;
 
 	*font = xmalloc(sizeof(struct kfont_handler));
 	(*font)->blob = NULL;
 
-	if (read_uint32_magic(&slice, PSF2_MAGIC)) {
-		printf("PSF2\n");
+	enum kfont_error err = kfont_parse_psf2(&p, *font);
+	if (err != KFONT_ERROR_BAD_MAGIC) {
+		if (err != KFONT_ERROR_SUCCESS) {
+			xfree(*font);
+		}
+		return err;
 	}
 
-	return KFONT_ERROR_SUCCESS;
+	xfree(*font);
+	return KFONT_ERROR_BAD_MAGIC;
 }
 
 void kfont_free(kfont_handler_t font)
