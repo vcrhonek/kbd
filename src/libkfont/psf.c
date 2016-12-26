@@ -49,6 +49,12 @@ struct kfont_psf2_header {
 };
 
 struct kfont_handler {
+	uint32_t width;
+	uint32_t height;
+	uint32_t char_size;
+	uint32_t char_count;
+	const unsigned char *glyphs;
+
 	unsigned char *blob;
 };
 
@@ -324,7 +330,6 @@ enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opt
 
 	(*font)->blob = buf;
 
-	printf("%s: %d\n", filename, size);
 	return KFONT_ERROR_SUCCESS;
 }
 
@@ -341,6 +346,8 @@ static bool kfont_read_psf2_header(struct kfont_slice *p, struct kfont_psf2_head
 
 static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t font)
 {
+	const unsigned char *begin = p->ptr;
+
 	if (!read_uint32_magic(p, PSF2_MAGIC)) {
 		return KFONT_ERROR_BAD_MAGIC;
 	}
@@ -364,12 +371,45 @@ static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t 
 		return KFONT_ERROR_UNSUPPORTED_PSF2_VERSION;
 	}
 
-	// font->version     = KFONT_VERSION_PSF2;
-	// font->font_len    = psf2_header.length;
-	// font->char_size   = psf2_header.char_size;
-	// font->font_offset = psf2_header.header_size;
-	// font->font_width  = psf2_header.width;
-	// has_table         = (psf2_header.flags & PSF2_HAS_UNICODE_TABLE);
+	size_t size = p->end - begin;
+	if (psf2_header.header_size > size) {
+		return KFONT_ERROR_FONT_OFFSET_TOO_BIG;
+	}
+
+	if (psf2_header.char_size == 0) {
+		return KFONT_ERROR_CHAR_SIZE_ZERO;
+	}
+
+	if (psf2_header.char_size > size - psf2_header.header_size) {
+		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
+	}
+
+	if (psf2_header.length > (size - psf2_header.header_size) / psf2_header.char_size) {
+		return KFONT_ERROR_FONT_LENGTH_TOO_BIG;
+	}
+
+	if (psf2_header.width == 0) {
+		// FIXME(dmage): another error code
+		return KFONT_ERROR_CHAR_SIZE_ZERO;
+	}
+
+	if (psf2_header.width > UINT32_MAX - 7) {
+		// FIXME(dmage): another error code
+		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
+	}
+
+	uint32_t pitch = (psf2_header.width + 7)/8;
+	if (psf2_header.height != psf2_header.char_size / pitch) {
+		// FIXME(dmage): another error code
+		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
+	}
+
+	font->width = psf2_header.width;
+	font->height = psf2_header.height;
+	font->char_size = psf2_header.char_size;
+	font->char_count = psf2_header.length;
+	font->glyphs = begin + psf2_header.header_size;
+
 	return KFONT_ERROR_SUCCESS;
 }
 
@@ -401,4 +441,9 @@ void kfont_free(kfont_handler_t font)
 		font->blob = NULL;
 	}
 	xfree(font);
+}
+
+uint32_t kfont_get_width(kfont_handler_t font)
+{
+	return font->width;
 }

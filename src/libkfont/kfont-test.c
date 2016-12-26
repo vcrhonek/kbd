@@ -37,28 +37,8 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	// FILE *f = fopen(argv[1], "rb");
-	// if (!f) {
-	// 	perror("fopen");
-	// 	exit(1);
-	// }
-	//
-	//
-	// if (!kfont_read_file(f, &font)) {
-	// 	fprintf(stderr, "kfont_read_file failed\n");
-	// 	exit(1);
-	// }
-	//
-	// enum kfont_error error;
-	// error = kfont_parse_psf_font(&font);
-	// if (error != KFONT_ERROR_SUCCESS) {
-	// 	fprintf(stderr, "kfont_parse_psf_font: %d\n", error);
-	// 	exit(1);
-	// }
-	//
-	// printf("kfont data:\n");
-	// printf("version     : %lu\n", (unsigned long)font.version);
-	// printf("font length : %lu\n", (unsigned long)font.font_len);
+	printf("kfont data:\n");
+	printf("width       : %lu\n", (unsigned long)kfont_get_width(font));
 	// printf("char size   : %lu\n", (unsigned long)font.char_size);
 	// printf("has table   : %u\n",  font.unicode_map_head != NULL);
 	// printf("font offset : %lu\n", (unsigned long)font.font_offset);

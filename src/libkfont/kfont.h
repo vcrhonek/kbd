@@ -83,17 +83,17 @@ void kfont_free(kfont_handler_t font);
 /**
  * @brief Returns the characters' width.
  */
-unsigned int kfont_get_width(kfont_handler_t font);
+uint32_t kfont_get_width(kfont_handler_t font);
 
 /**
  * @brief Returns the characters' height.
  */
-unsigned int kfont_get_height(kfont_handler_t font);
+uint32_t kfont_get_height(kfont_handler_t font);
 
 /**
  * @brief Returns the number of characters in the font.
  */
-unsigned int kfont_get_char_count(kfont_handler_t font);
+uint32_t kfont_get_char_count(kfont_handler_t font);
 
 /**
  * @brief Returns a buffer with a symbol representation. It should not be freed.
@@ -119,7 +119,7 @@ unsigned int kfont_get_char_count(kfont_handler_t font);
  * x = (buf[byte_idx] & (0x80 >> bit_idx))
  * @endcode
  */
-unsigned char *kfont_get_char_buffer(kfont_handler_t font, unsigned int font_pos);
+unsigned char *kfont_get_char_buffer(kfont_handler_t font, uint32_t font_pos);
 
 /**
  * @brief A linked list of pairs (font_pos, seq[len]).
@@ -133,7 +133,7 @@ struct kfont_unimap_node {
 	/**
 	 * A font position.
 	 */
-	unsigned int font_pos;
+	uint32_t font_pos;
 
 	/**
 	 * A length of the @ref seq.
