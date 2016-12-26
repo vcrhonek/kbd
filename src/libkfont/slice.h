@@ -18,22 +18,12 @@ struct kfont_slice {
 
 static inline uint16_t peek_uint16(uint8_t *data)
 {
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	// TODO(dmage): is unaligned access allowed?
-	return *(uint16_t *)data;
-#else
-# error TODO
-#endif
+	return data[0] + (data[1] << 8);
 }
 
 static inline uint32_t peek_uint32(uint8_t *data)
 {
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	// TODO(dmage): is unaligned access allowed?
-	return *(uint32_t *)data;
-#else
-# error TODO
-#endif
+	return data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
 }
 
 static inline bool read_uint16(struct kfont_slice *slice, uint16_t *out)
