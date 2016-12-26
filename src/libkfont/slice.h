@@ -14,7 +14,7 @@
 struct kfont_slice {
     unsigned char *ptr;
 	unsigned char *end;
-}
+};
 
 static inline uint16_t peek_uint16(uint8_t *data)
 {
@@ -88,7 +88,7 @@ static inline bool read_utf8_rune(struct kfont_slice *slice, uint32_t *out)
 		need   = 1;
 		result = c & 0x1f;
 	} else {
-		*out = INVALID_RUNE;
+		*out = INVALID_CODE_POINT;
 		return true;
 	}
 
@@ -99,7 +99,7 @@ static inline bool read_utf8_rune(struct kfont_slice *slice, uint32_t *out)
 
 		c = *slice->ptr;
 		if ((c & 0xc0) != 0x80) {
-			*out = INVALID_RUNE;
+			*out = INVALID_CODE_POINT;
 			return true;
 		}
 		slice->ptr++;

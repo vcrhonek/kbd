@@ -10,23 +10,25 @@
  */
 enum kfont_error {
 	KFONT_ERROR_SUCCESS                  = 0,
-	KFONT_ERROR_BAD_MAGIC                = -1,
-	KFONT_ERROR_BAD_PSF1_HEADER          = -2,
-	KFONT_ERROR_UNSUPPORTED_PSF1_MODE    = -3,
-	KFONT_ERROR_BAD_PSF2_HEADER          = -4,
-	KFONT_ERROR_UNSUPPORTED_PSF2_VERSION = -5,
-	KFONT_ERROR_TRAILING_GARBAGE         = -6,
-	KFONT_ERROR_SHORT_UNICODE_TABLE      = -7,
-	KFONT_ERROR_FONT_OFFSET_TOO_BIG      = -8,
-	KFONT_ERROR_CHAR_SIZE_ZERO           = -9,
-	KFONT_ERROR_CHAR_SIZE_TOO_BIG        = -10,
-	KFONT_ERROR_FONT_LENGTH_TOO_BIG      = -11,
+	KFONT_ERROR_ERRNO                    = -1,
+	KFONT_ERROR_READ                     = -2,
+	KFONT_ERROR_BAD_MAGIC                = -3,
+	KFONT_ERROR_BAD_PSF1_HEADER          = -4,
+	KFONT_ERROR_UNSUPPORTED_PSF1_MODE    = -5,
+	KFONT_ERROR_BAD_PSF2_HEADER          = -6,
+	KFONT_ERROR_UNSUPPORTED_PSF2_VERSION = -7,
+	KFONT_ERROR_TRAILING_GARBAGE         = -8,
+	KFONT_ERROR_SHORT_UNICODE_TABLE      = -9,
+	KFONT_ERROR_FONT_OFFSET_TOO_BIG      = -10,
+	KFONT_ERROR_CHAR_SIZE_ZERO           = -11,
+	KFONT_ERROR_CHAR_SIZE_TOO_BIG        = -12,
+	KFONT_ERROR_FONT_LENGTH_TOO_BIG      = -13,
 };
 
 /**
  * @brief Returns the error message string corresponding to an error code.
  */
-const char *kfont_load(enum kfont_error err);
+const char *kfont_strerror(enum kfont_error err);
 
 /**
  * @brief Configuration options for the font parser.
