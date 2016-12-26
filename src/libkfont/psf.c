@@ -33,6 +33,10 @@
 #define PSF2_SEPARATOR 0xFF
 #define PSF2_START_SEQ 0xFE
 
+struct kfont_handler {
+	unsigned char *blob;
+};
+
 static bool kfont_blob_read(FILE *f, unsigned char **buffer, size_t *size)
 {
 	size_t buflen = MAXFONTSIZE / 4; /* actually an arbitrary value */
@@ -323,7 +327,13 @@ enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opt
 
 	fclose(f);
 
-	/* err = */ kfont_parse(buf, size, opts, font);
+	enum kfont_error err = kfont_parse(buf, size, opts, font);
+	if (err != KFONT_ERROR_SUCCESS) {
+		xfree(buf);
+		return err;
+	}
+
+	(*font)->blob = buf;
 
 	printf("%s: %d\n", filename, size);
 	return KFONT_ERROR_SUCCESS;
@@ -335,11 +345,21 @@ enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse
 	slice.ptr = buf;
 	slice.end = buf + size;
 
+	*font = xmalloc(sizeof(struct kfont_handler));
+	(*font)->blob = NULL;
+
 	if (read_uint32_magic(&slice, PSF2_MAGIC)) {
 		printf("PSF2\n");
 	}
+
+	return KFONT_ERROR_SUCCESS;
 }
 
 void kfont_free(kfont_handler_t font)
 {
+	if (font->blob) {
+		xfree(font->blob);
+		font->blob = NULL;
+	}
+	xfree(font);
 }
