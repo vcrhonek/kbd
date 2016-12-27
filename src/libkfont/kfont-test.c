@@ -60,13 +60,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// struct kfont_unicode_pair *pair = font.unicode_map_head;
-	// for ( ; pair; pair = pair->next) {
-	// 	for (uint32_t i = 0; i < pair->seq_length; i++) {
-	// 		printf("U+%04X ", pair->seq[i]);
-	// 	}
-	// 	printf("-> %u\n", pair->font_pos);
-	// }
+	struct kfont_unimap_node *unimap = kfont_get_unicode_map(font);
+	for ( ; unimap; unimap = unimap->next) {
+		for (uint32_t i = 0; i < unimap->len; i++) {
+			printf("U+%04X ", unimap->seq[i]);
+		}
+		printf("-> %u\n", unimap->font_pos);
+	}
 
 	kfont_free(font);
 }

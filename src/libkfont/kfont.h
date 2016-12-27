@@ -150,7 +150,7 @@ struct kfont_unimap_node {
  * @brief Returns a Unicode description of the glyphs.
  * The result is associated with the font and should not be freed.
  */
-struct kfont_unimap_node *kfont_get_unicode_map(kfont_handler_t *font);
+struct kfont_unimap_node *kfont_get_unicode_map(kfont_handler_t font);
 
 /**
  * @brief Loads a unicode map from the given file.
