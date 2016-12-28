@@ -23,6 +23,7 @@ enum kfont_error {
 	KFONT_ERROR_CHAR_SIZE_ZERO           = -11,
 	KFONT_ERROR_CHAR_SIZE_TOO_BIG        = -12,
 	KFONT_ERROR_FONT_LENGTH_TOO_BIG      = -13,
+	KFONT_ERROR_FONT_METRICS_MISMATCH    = -14,
 };
 
 /**

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <kfont.h>
 #include "slice.h"
@@ -249,7 +250,7 @@ static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t 
 		return KFONT_ERROR_UNSUPPORTED_PSF1_MODE;
 	}
 
-	/* TODO: check char_siez */
+	/* TODO: check char_size */
 	/* TODO: check char_count */
 
 	font->width      = 8;
@@ -370,8 +371,38 @@ ret:
 
 enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 {
-	/* TODO */
-	abort();
+	if (font->width != other->width || font->height != other->height || font->char_size != other->char_size) {
+		return KFONT_ERROR_FONT_METRICS_MISMATCH;
+	}
+
+	/* TODO(dmage): check overflows */
+	uint32_t char_count  = font->char_count + other->char_count;
+	unsigned char *glyphs = xmalloc(font->char_size * char_count);
+
+	memmove(glyphs,
+	        font->glyphs,
+	        font->char_size * font->char_count);
+	memmove(glyphs + font->char_size * font->char_count,
+	        other->glyphs,
+	        font->char_size * other->char_count);
+
+	font->glyphs = glyphs;
+	xfree(font->blob);
+	font->blob = glyphs;
+
+	if (font->unimap_tail) {
+		font->unimap_tail->next = other->unimap_head;
+		font->unimap_tail = other->unimap_tail;
+	} else {
+		font->unimap_head = other->unimap_head;
+		font->unimap_tail = other->unimap_tail;
+	}
+	other->unimap_head = NULL;
+	other->unimap_tail = NULL;
+
+	kfont_free(other);
+
+	return KFONT_ERROR_SUCCESS;
 }
 
 void kfont_free(kfont_handler_t font)
