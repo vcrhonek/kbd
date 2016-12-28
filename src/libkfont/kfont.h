@@ -10,7 +10,6 @@
  */
 enum kfont_error {
 	KFONT_ERROR_SUCCESS                  = 0,
-	KFONT_ERROR_ERRNO                    = -1,
 	KFONT_ERROR_READ                     = -2,
 	KFONT_ERROR_BAD_MAGIC                = -3,
 	KFONT_ERROR_BAD_PSF1_HEADER          = -4,

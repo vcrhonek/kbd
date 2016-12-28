@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -97,7 +98,7 @@ enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opt
 {
 	FILE *f = fopen(filename, "rb");
 	if (!f) {
-		return KFONT_ERROR_ERRNO;
+		return errno;
 	}
 
 	unsigned char *buf;
