@@ -78,7 +78,7 @@ static inline bool read_uint32_magic(struct kfont_slice *slice, uint32_t magic)
 	return true;
 }
 
-static inline bool read_utf8_rune(struct kfont_slice *slice, uint32_t *out)
+static inline bool read_utf8_code_point(struct kfont_slice *slice, uint32_t *out)
 {
 	if (slice->ptr + 1 > slice->end) {
 		return false;

@@ -303,6 +303,37 @@ static bool kfont_read_psf2_header(struct kfont_slice *p, struct kfont_psf2_head
 	       read_uint32(p, &header->width);
 }
 
+static bool kfont_read_psf2_unicode(struct kfont_slice *p, struct kfont_unimap_node **unimap)
+{
+	if (p->ptr + 1 > p->end) {
+		return false;
+	}
+
+	if (*p->ptr == PSF2_SEPARATOR) {
+		p->ptr++;
+		*unimap = NULL;
+		return true;
+	}
+
+	if (*p->ptr == PSF2_START_SEQ) {
+		fprintf(stderr, "psf2 read unicode map: <start seq>\n");
+		abort();
+		// TODO(dmage): handle <seq>*
+	}
+
+	uint32_t uc;
+	if (!read_utf8_code_point(p, &uc)) {
+		return false;
+	}
+
+	*unimap = xmalloc(sizeof(struct kfont_unimap_node) + sizeof(uint32_t));
+
+	(*unimap)->len      = 1;
+	(*unimap)->seq[0]   = uc;
+
+	return true;
+}
+
 static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t font)
 {
 	if (!read_uint16_magic(p, PSF1_MAGIC)) {
@@ -381,39 +412,27 @@ static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t 
 		p->ptr = begin + psf2_header.header_size + font->char_size * font->char_count;
 		for (uint32_t font_pos = 0; font_pos < font->char_count; font_pos++) {
 			while (1) {
-				if (p->ptr == p->end) {
+				struct kfont_unimap_node *unimap;
+				if (!kfont_read_psf2_unicode(p, &unimap)) {
 					return KFONT_ERROR_SHORT_UNICODE_TABLE;
 				}
-				if (*p->ptr == PSF2_START_SEQ) {
-					printf("psf2 read unicode map %d: <start seq>\n", font_pos);
-					abort(); // TODO(dmage): handle <seq>*
-				}
-				if (*p->ptr == PSF2_SEPARATOR) {
-					p->ptr++;
+				if (!unimap) {
+					// end of unicode map for this font position
 					break;
 				}
-
-				uint32_t rune;
-				if (!read_utf8_rune(p, &rune)) {
-					return KFONT_ERROR_SHORT_UNICODE_TABLE;
-				}
-				if (rune == INVALID_CODE_POINT) {
-					printf("psf2 read unicode map %d: <invalid utf8 sequence>\n", font_pos);
+				if (unimap->seq[0] == INVALID_CODE_POINT) {
+					fprintf(stderr, "psf2 read unicode map %d: <invalid utf8 sequence>\n", font_pos);
 					abort(); // TODO(dmage)
 				}
 
-				struct kfont_unimap_node *pair = xmalloc(sizeof(struct kfont_unimap_node) + sizeof(uint32_t));
-
-				pair->font_pos = font_pos;
-				pair->len      = 1;
-				pair->seq[0]   = rune;
+				unimap->font_pos = font_pos;
 
 				if (font->unimap_tail) {
-					font->unimap_tail->next = pair;
+					font->unimap_tail->next = unimap;
 				} else {
-					font->unimap_head = pair;
+					font->unimap_head = unimap;
 				}
-				font->unimap_tail = pair;
+				font->unimap_tail = unimap;
 			}
 		}
 	}
