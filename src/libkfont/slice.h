@@ -26,6 +26,17 @@ static inline uint32_t peek_uint32(uint8_t *data)
 	return data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
 }
 
+static inline bool read_uint8(struct kfont_slice *slice, uint8_t *out)
+{
+	if (slice->ptr + sizeof(uint8_t) > slice->end) {
+		return false;
+	}
+
+	*out = *slice->ptr;
+	slice->ptr += sizeof(uint8_t);
+	return true;
+}
+
 static inline bool read_uint16(struct kfont_slice *slice, uint16_t *out)
 {
 	if (slice->ptr + sizeof(uint16_t) > slice->end) {

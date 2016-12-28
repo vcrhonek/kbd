@@ -92,167 +92,6 @@ static bool kfont_blob_read(FILE *f, unsigned char **buffer, size_t *size)
 	return true;
 }
 
-// static bool kfont_read_unicode_map(struct kfont_slice *slice, unsigned int font_pos, enum kfont_version version, struct kfont_unicode_pair **out)
-// {
-// 	if (version == KFONT_VERSION_PSF1) {
-// 		while (1) {
-// 			uint16_t uc;
-// 			if (!read_uint16(slice, &uc)) {
-// 				return false;
-// 			}
-// 			if (uc == PSF1_START_SEQ) {
-// 				printf("kfont_read_unicode_map %d: <start seq>\n", font_pos);
-// 				abort(); // TODO(dmage): handle <seq>*
-// 			}
-// 			if (uc == PSF1_SEPARATOR) {
-// 				break;
-// 			}
-//
-// 			struct kfont_unicode_pair *pair = xmalloc(sizeof(struct kfont_unicode_pair));
-//
-// 			pair->font_pos   = font_pos;
-// 			pair->seq_length = 1;
-// 			pair->seq[0]     = uc;
-//
-// 			pair->next = *out;
-// 			*out       = pair;
-// 		}
-// 	} else if (version == KFONT_VERSION_PSF2) {
-// 		while (1) {
-// 			if (slice->ptr == slice->end) {
-// 				return false;
-// 			}
-// 			if (*slice->ptr == PSF2_START_SEQ) {
-// 				printf("kfont_read_unicode_map %d: <start seq>\n", font_pos);
-// 				abort(); // TODO(dmage): handle <seq>*
-// 			}
-// 			if (*slice->ptr == PSF2_SEPARATOR) {
-// 				slice->ptr++;
-// 				break;
-// 			}
-//
-// 			uint32_t rune;
-// 			if (!read_utf8_rune(slice, &rune)) {
-// 				return false;
-// 			}
-// 			if (rune == INVALID_RUNE) {
-// 				printf("kfont_read_unicode_map %d: <invalid utf8 sequence>\n", font_pos);
-// 				abort(); // TODO(dmage)
-// 			}
-//
-// 			struct kfont_unicode_pair *pair = xmalloc(sizeof(struct kfont_unicode_pair));
-//
-// 			pair->font_pos   = font_pos;
-// 			pair->seq_length = 1;
-// 			pair->seq[0]     = rune;
-//
-// 			pair->next = *out;
-// 			*out       = pair;
-// 		}
-// 	} else {
-// 		printf("kfont_read_unicode_map %d: unknown font version\n", font_pos);
-// 		abort();
-// 	}
-// 	return true;
-// }
-//
-// enum kfont_error kfont_parse_psf_font(struct kfont *font)
-// {
-// 	uint32_t has_table = 0;
-//
-// 	struct kfont_slice p;
-// 	p.ptr = font->content.data;
-// 	p.end = font->content.data + font->content.size;
-//
-// 	if (font->content.size >= 4 && peek_uint32(font->content.data) == PSF2_MAGIC) {
-// 		p.ptr += 4;
-//
-// 		struct kfont_psf2_header psf2_header;
-// 		if (!kfont_read_psf2_header(&p, &psf2_header)) {
-// 			return KFONT_ERROR_BAD_PSF2_HEADER;
-// 		}
-//
-// 		// FIXME(dmage): remove these printfs
-// 		printf("PSF2\n");
-// 		printf("version     : %lu\n", (unsigned long)psf2_header.version);
-// 		printf("header size : %lu\n", (unsigned long)psf2_header.header_size);
-// 		printf("flags       : %lu\n", (unsigned long)psf2_header.flags);
-// 		printf("length      : %lu\n", (unsigned long)psf2_header.length);
-// 		printf("char size   : %lu\n", (unsigned long)psf2_header.char_size);
-// 		printf("height      : %lu\n", (unsigned long)psf2_header.height);
-// 		printf("width       : %lu\n", (unsigned long)psf2_header.width);
-//
-// 		if (psf2_header.version > PSF2_MAXVERSION) {
-// 			return KFONT_ERROR_UNSUPPORTED_PSF2_VERSION;
-// 		}
-//
-// 		font->version     = KFONT_VERSION_PSF2;
-// 		font->font_len    = psf2_header.length;
-// 		font->char_size   = psf2_header.char_size;
-// 		font->font_offset = psf2_header.header_size;
-// 		font->font_width  = psf2_header.width;
-// 		has_table         = (psf2_header.flags & PSF2_HAS_UNICODE_TABLE);
-// 	} else if (font->content.size >= 2 && peek_uint16(font->content.data) == PSF1_MAGIC) {
-// 		p.ptr += 2;
-//
-// 		struct kfont_psf1_header psf1_header;
-// 		if (!kfont_read_psf1_header(&p, &psf1_header)) {
-// 			return KFONT_ERROR_BAD_PSF1_HEADER;
-// 		}
-//
-// 		// FIXME(dmage): remove these printfs
-// 		printf("PSF1\n");
-// 		printf("mode      : %u\n", (unsigned int)psf1_header.mode);
-// 		printf("char size : %u\n", (unsigned int)psf1_header.char_size);
-//
-// 		if (psf1_header.mode > PSF1_MAXMODE) {
-// 			return KFONT_ERROR_UNSUPPORTED_PSF1_MODE;
-// 		}
-//
-// 		font->version     = KFONT_VERSION_PSF1;
-// 		font->font_len    = (psf1_header.mode & PSF1_MODE512 ? 512 : 256);
-// 		font->char_size   = psf1_header.char_size;
-// 		font->font_offset = 4;
-// 		font->font_width  = 8;
-// 		has_table         = (psf1_header.mode & (PSF1_MODE_HAS_TAB | PSF1_MODE_HAS_SEQ));
-// 	} else {
-// 		return KFONT_ERROR_BAD_MAGIC;
-// 	}
-//
-// 	if (font->font_offset > font->content.size) {
-// 		return KFONT_ERROR_FONT_OFFSET_TOO_BIG;
-// 	}
-//
-// 	if (font->char_size == 0) {
-// 		return KFONT_ERROR_CHAR_SIZE_ZERO;
-// 	}
-//
-// 	if (font->char_size > font->content.size - font->font_offset) {
-// 		return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
-// 	}
-//
-// 	if (font->font_len > (font->content.size - font->font_offset) / font->char_size) {
-// 		return KFONT_ERROR_FONT_LENGTH_TOO_BIG;
-// 	}
-//
-// 	if (has_table) {
-// 		p.ptr = font->content.data + font->font_offset + font->font_len * font->char_size;
-// 		p.end = font->content.data + font->content.size;
-//
-// 		for (uint32_t i = 0; i < font->font_len; i++) {
-// 			if (!kfont_read_unicode_map(&p, i, font->version, &font->unicode_map_head)) {
-// 				return KFONT_ERROR_SHORT_UNICODE_TABLE;
-// 			}
-// 		}
-//
-// 		if (p.ptr != p.end) {
-// 			return KFONT_ERROR_TRAILING_GARBAGE;
-// 		}
-// 	}
-//
-// 	return KFONT_ERROR_SUCCESS;
-// }
-
 enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opts, kfont_handler_t *font)
 {
 	FILE *f = fopen(filename, "rb");
@@ -282,14 +121,8 @@ enum kfont_error kfont_load(const char *filename, struct kfont_parse_options opt
 
 static bool kfont_read_psf1_header(struct kfont_slice *p, struct kfont_psf1_header *header)
 {
-	if (p->ptr + 2 > p->end) {
-		return false;
-	}
-
-	header->mode      = p->ptr[0];
-	header->char_size = p->ptr[1];
-	p->ptr += 2;
-	return true;
+	return read_uint8(p, &header->mode) &&
+	       read_uint8(p, &header->char_size);
 }
 
 static bool kfont_read_psf2_header(struct kfont_slice *p, struct kfont_psf2_header *header)
@@ -301,6 +134,32 @@ static bool kfont_read_psf2_header(struct kfont_slice *p, struct kfont_psf2_head
 	       read_uint32(p, &header->char_size) &&
 	       read_uint32(p, &header->height) &&
 	       read_uint32(p, &header->width);
+}
+
+static bool kfont_read_psf1_unicode(struct kfont_slice *p, struct kfont_unimap_node **unimap)
+{
+	uint16_t uc;
+	if (!read_uint16(p, &uc)) {
+		return false;
+	}
+
+	if (uc == PSF1_SEPARATOR) {
+		*unimap = NULL;
+		return true;
+	}
+
+	if (uc == PSF1_START_SEQ) {
+		fprintf(stderr, "psf1 read unicode map: <start seq>\n");
+		abort();
+		// TODO(dmage): handle <seq>*
+	}
+
+	*unimap = xmalloc(sizeof(struct kfont_unimap_node) + sizeof(uint32_t));
+
+	(*unimap)->len    = 1;
+	(*unimap)->seq[0] = uc;
+
+	return true;
 }
 
 static bool kfont_read_psf2_unicode(struct kfont_slice *p, struct kfont_unimap_node **unimap)
@@ -328,10 +187,51 @@ static bool kfont_read_psf2_unicode(struct kfont_slice *p, struct kfont_unimap_n
 
 	*unimap = xmalloc(sizeof(struct kfont_unimap_node) + sizeof(uint32_t));
 
-	(*unimap)->len      = 1;
-	(*unimap)->seq[0]   = uc;
+	(*unimap)->len    = 1;
+	(*unimap)->seq[0] = uc;
 
 	return true;
+}
+
+static enum kfont_error kfont_parse_psf_unimap(struct kfont_slice *p,
+                                               kfont_handler_t font,
+                                               bool (*read_unicode)(struct kfont_slice *p, struct kfont_unimap_node **unimap))
+{
+	for (uint32_t font_pos = 0; font_pos < font->char_count; font_pos++) {
+		while (1) {
+			struct kfont_unimap_node *unimap;
+			if (!read_unicode(p, &unimap)) {
+				return KFONT_ERROR_SHORT_UNICODE_TABLE;
+			}
+			if (!unimap) {
+				// end of unicode map for this font position
+				break;
+			}
+
+			if (unimap->len == 0) {
+				// XXX: free(unimap)
+				fprintf(stderr, "read unicode map %d: <empty sequence>\n", font_pos);
+				abort(); // TODO(dmage)
+			}
+			for (unsigned int i = 0; i < unimap->len; i++) {
+				if (unimap->seq[i] == INVALID_CODE_POINT) {
+					// XXX: free(unimap)
+					fprintf(stderr, "read unicode map %d: <invalid utf8>\n", font_pos);
+					abort(); // TODO(dmage)
+				}
+			}
+
+			unimap->font_pos = font_pos;
+
+			if (font->unimap_tail) {
+				font->unimap_tail->next = unimap;
+			} else {
+				font->unimap_head = unimap;
+			}
+			font->unimap_tail = unimap;
+		}
+	}
+	return KFONT_ERROR_SUCCESS;
 }
 
 static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t font)
@@ -345,6 +245,10 @@ static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t 
 		return KFONT_ERROR_BAD_PSF1_HEADER;
 	}
 
+	if (psf1_header.mode > PSF1_MAXMODE) {
+		return KFONT_ERROR_UNSUPPORTED_PSF1_MODE;
+	}
+
 	/* TODO: check char_siez */
 	/* TODO: check char_count */
 
@@ -354,7 +258,18 @@ static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t 
 	font->char_count = (psf1_header.mode & PSF1_MODE512 ? 512 : 256);
 	font->glyphs     = p->ptr;
 
-	/* TODO(dmage): load unimap */
+	if (psf1_header.mode & (PSF1_MODE_HAS_TAB | PSF1_MODE_HAS_SEQ)) {
+		p->ptr += font->char_size * font->char_count;
+
+		enum kfont_error err = kfont_parse_psf_unimap(p, font, kfont_read_psf1_unicode);
+		if (err != KFONT_ERROR_SUCCESS) {
+			return err;
+		}
+
+		if (p->ptr != p->end) {
+			return KFONT_ERROR_TRAILING_GARBAGE;
+		}
+	}
 
 	return KFONT_ERROR_SUCCESS;
 }
@@ -410,30 +325,14 @@ static enum kfont_error kfont_parse_psf2(struct kfont_slice *p, kfont_handler_t 
 
 	if (psf2_header.flags & PSF2_HAS_UNICODE_TABLE) {
 		p->ptr = begin + psf2_header.header_size + font->char_size * font->char_count;
-		for (uint32_t font_pos = 0; font_pos < font->char_count; font_pos++) {
-			while (1) {
-				struct kfont_unimap_node *unimap;
-				if (!kfont_read_psf2_unicode(p, &unimap)) {
-					return KFONT_ERROR_SHORT_UNICODE_TABLE;
-				}
-				if (!unimap) {
-					// end of unicode map for this font position
-					break;
-				}
-				if (unimap->seq[0] == INVALID_CODE_POINT) {
-					fprintf(stderr, "psf2 read unicode map %d: <invalid utf8 sequence>\n", font_pos);
-					abort(); // TODO(dmage)
-				}
 
-				unimap->font_pos = font_pos;
+		enum kfont_error err = kfont_parse_psf_unimap(p, font, kfont_read_psf2_unicode);
+		if (err != KFONT_ERROR_SUCCESS) {
+			return err;
+		}
 
-				if (font->unimap_tail) {
-					font->unimap_tail->next = unimap;
-				} else {
-					font->unimap_head = unimap;
-				}
-				font->unimap_tail = unimap;
-			}
+		if (p->ptr != p->end) {
+			return KFONT_ERROR_TRAILING_GARBAGE;
 		}
 	}
 
