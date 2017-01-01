@@ -89,6 +89,20 @@ static inline bool read_uint32_magic(struct kfont_slice *slice, uint32_t magic)
 	return true;
 }
 
+static inline bool read_buf_magic(struct kfont_slice *slice, const unsigned char *buf, size_t size)
+{
+	if (slice->ptr + size > slice->end) {
+		return false;
+	}
+
+	if (memcmp(slice->ptr, buf, size) != 0) {
+		return false;
+	}
+
+	slice->ptr += size;
+	return true;
+}
+
 static inline bool read_utf8_code_point(struct kfont_slice *slice, uint32_t *out)
 {
 	if (slice->ptr + 1 > slice->end) {

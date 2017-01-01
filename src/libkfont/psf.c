@@ -236,6 +236,37 @@ static enum kfont_error kfont_parse_psf_unimap(struct kfont_slice *p,
 	return KFONT_ERROR_SUCCESS;
 }
 
+static enum kfont_error kfont_parse_legacy(struct kfont_slice *p, kfont_handler_t font)
+{
+	size_t len = p->ptr - p->end;
+	if (len == 9780) {
+		fprintf(stderr, "kfont_parse_legacy: 9780\n");
+		abort(); // TODO(dmage)
+	} else if (len == 32768) {
+		fprintf(stderr, "kfont_parse_legacy: 32768\n");
+		abort(); // TODO(dmage)
+	} else if (len % 256 == 0 || len % 256 == 40) {
+		if (len % 256 == 40) {
+			fprintf(stderr, "kfont_parse_legacy: +40\n");
+			p->ptr += 40;
+		}
+		fprintf(stderr, "kfont_parse_legacy: height=%lu\n", (unsigned long)((p->end - p->ptr) / 256));
+		abort(); // TODO(dmage)
+	}
+	return KFONT_ERROR_BAD_MAGIC;
+}
+
+static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handler_t font)
+{
+	const unsigned char magic[] = "# combine partial fonts\n";
+	if (!read_buf_magic(p, magic, sizeof(magic) - 1)) {
+		return KFONT_ERROR_BAD_MAGIC;
+	}
+
+	fprintf(stderr, "kfont_parse_combined\n");
+	abort(); // TODO(dmage)
+}
+
 static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t font)
 {
 	if (!read_uint16_magic(p, PSF1_MAGIC)) {
@@ -359,6 +390,16 @@ enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse
 	}
 
 	err = kfont_parse_psf1(&p, *font);
+	if (err != KFONT_ERROR_BAD_MAGIC) {
+		goto ret;
+	}
+
+	err = kfont_parse_combined(&p, *font);
+	if (err != KFONT_ERROR_BAD_MAGIC) {
+		goto ret;
+	}
+
+	err = kfont_parse_legacy(&p, *font);
 	if (err != KFONT_ERROR_BAD_MAGIC) {
 		goto ret;
 	}
