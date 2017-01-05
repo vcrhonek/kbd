@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "version.h"
+#include "bmp.h"
 #include "kfont.h"
 #include "xmalloc.h"
 
@@ -37,25 +38,6 @@ static bool read_all(FILE *f, unsigned char **buffer, size_t *size)
 	*size   = n;
 
 	return true;
-}
-
-static void fwrite_buf(FILE *f, const unsigned char *buf, size_t size)
-{
-	if (fwrite(buf, size, 1, f) == 0) {
-		fprintf(stderr, "fwrite error\n");
-		abort();
-	}
-}
-
-static void fwrite_uint32(FILE *f, uint32_t v)
-{
-	unsigned char buf[4] = {
-		v & 0xff,
-		(v >> 8) & 0xff,
-		(v >> 16) & 0xff,
-		v >> 24,
-	};
-	fwrite_buf(f, buf, 4);
 }
 
 int main(int argc, char *argv[])
@@ -126,47 +108,15 @@ int main(int argc, char *argv[])
 	uint32_t font_width = kfont_get_width(font);
 	uint32_t font_height = kfont_get_height(font);
 	uint32_t pitch = (font_width - 1) / 8 + 1;
-	unsigned long pwidth = width * font_width;
-	unsigned long pheight = height * font_height;
 
-	unsigned long words_per_row = (pwidth + 31) / 32;
-	unsigned long bytes_per_row = words_per_row * 4;
-
-	FILE *f = fopen(argv[2], "wb");
-	if (!f) {
-		fprintf(stderr, "fopen %s failed\n", argv[2]);
-		exit(1);
-	}
-
-	// BMP header
-	fwrite_buf(f, (const unsigned char*)"BM", 2);
-	fwrite_uint32(f, 14 + 40 + 8 + pheight * bytes_per_row); // file size
-	fwrite_uint32(f, 0); // unused
-	fwrite_uint32(f, 62); // bitmap offset
-	// DIB header
-	fwrite_uint32(f, 40); // size of DIB header
-	fwrite_uint32(f, pwidth); // width
-	fwrite_uint32(f, pheight); // height
-	uint32_t tmp = 0x0001; // number of planes, must be 1
-	tmp += 0x0001 << 16; // bits per pixel
-	fwrite_uint32(f, tmp);
-	fwrite_uint32(f, 0); // BI_RGB, no compression
-	fwrite_uint32(f, pheight * bytes_per_row); // size of raw bitmap data
-	fwrite_uint32(f, 0x0B13); // 72 DPI
-	fwrite_uint32(f, 0x0B13); // 72 DPI
-	fwrite_uint32(f, 2); // colors in the palette
-	fwrite_uint32(f, 0); // 0 means all colors are important
-	// Color table
-	fwrite_uint32(f, 0x00ffffff); // 0xAARRGGBB
-	fwrite_uint32(f, 0x00000000);
+	struct bmp image;
+	bmp_open(&image, argv[2]);
+	bmp_write_header(&image, width * font_width, height * font_height);
 	// Bitmap data
 	for (unsigned long line = 0; line < height; line++)
 	{
 		for (row = font_height - 1; ; row--)
 		{
-			unsigned long bytes = 0;
-			unsigned char b = 0;
-			unsigned char bits = 8;
 			for (size_t i = lines[height - line - 1]; i < buflen; i++)
 			{
 				if (buf[i] == '\n')
@@ -174,54 +124,16 @@ int main(int argc, char *argv[])
 					break;
 				}
 				const unsigned char *glyph = kfont_get_char_buffer(font, buf[i]) + pitch * row;
-				unsigned char g = *glyph++;
-				unsigned long chunk = font_width >= 8 ? 8 : font_width;
-				unsigned long gbits = font_width;
-				while (1) {
-					if (chunk <= bits) {
-						b = (b << chunk) + g;
-						bits -= chunk;
-						if (bits == 0) {
-							fwrite_buf(f, &b, 1);
-							bytes++;
-							b = 0;
-							bits = 8;
-						}
-						gbits -= chunk;
-						if (gbits == 0) {
-							break;
-						}
-						chunk = gbits >= 8 ? 8 : gbits;
-						g = *glyph++ >> (8 - chunk);
-					} else {
-						b = (b << bits) + (g >> (chunk - bits));
-						chunk -= bits;
-						gbits -= bits;
-						g = g & ((1 << chunk) - 1);
-						fwrite_buf(f, &b, 1);
-						bytes++;
-						b = 0;
-						bits = 8;
-					}
-				}
+				bmp_write_bits(&image, glyph, font_width);
 			}
-			if (bits != 8) {
-				b = b << bits;
-				fwrite_buf(f, &b, 1);
-				bytes++;
-			}
-			for (size_t i = bytes; i < bytes_per_row; i++) {
-				b = 0;
-				fwrite_buf(f, &b, 1);
-			}
+			bmp_end_row(&image);
 			if (row == 0)
 			{
 				break;
 			}
 		}
 	}
-
-	fclose(f);
+	bmp_close(&image);
 
 	xfree(lines);
 	kfont_free(font);

@@ -12,13 +12,18 @@ kfont_SOURCES = \
 	kfont-test.c \
 	../version.h
 
+kfont_dump_SOURCES = \
+	kfont-dump.c \
+	../version.h
+
 kfont_render_SOURCES = \
 	kfont-render.c \
 	../version.h
 
 kfont_LDADD = libkfont.la
+kfont_dump_LDADD = libkfont.la
 kfont_render_LDADD = libkfont.la
-noinst_PROGRAMS = kfont kfont-render
+noinst_PROGRAMS = kfont kfont-dump kfont-render
 
 if BUILD_LIBKFONT
 lib_LTLIBRARIES = libkfont.la
