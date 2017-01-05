@@ -47,6 +47,12 @@ int main(int argc, char *argv[])
 
 	uint32_t char_count = kfont_get_char_count(font);
 
+	if (char_count <= 'f') {
+		fprintf(stderr, "%s: %s does not contain enough glyphs to render labels (%lu glyphs)\n",
+		        argv[0], argv[1], (unsigned long)char_count);
+		exit(1);
+	}
+
 	unsigned long row_label_width = 0;
 	for (uint32_t glyphs = char_count - 1; glyphs > 0; glyphs >>= 8) {
 		row_label_width++;
