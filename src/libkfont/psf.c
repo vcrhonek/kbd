@@ -263,6 +263,30 @@ static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handle
 		return KFONT_ERROR_BAD_MAGIC;
 	}
 
+	while (1) {
+		const unsigned char *filename = p->ptr;
+		while (p->ptr != p->end) {
+			if (*p->ptr == '\0') {
+				return KFONT_ERROR_TRAILING_GARBAGE; // FIXME(dmage): \0 in text file
+			}
+			if (*p->ptr == '\n') {
+				*p->ptr = '\0';
+				break;
+			}
+			p->ptr++;
+		}
+		while (p->ptr == p->end) {
+			return KFONT_ERROR_TRAILING_GARBAGE; // FIXME(dmage): no \n at the end of the file
+		}
+		p->ptr++;
+
+		fprintf(stderr, "TODO: load [%s]\n", filename);
+
+		if (p->ptr == p->end) {
+			break;
+		}
+	}
+
 	fprintf(stderr, "kfont_parse_combined\n");
 	abort(); // TODO(dmage)
 }

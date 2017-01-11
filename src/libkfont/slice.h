@@ -16,12 +16,12 @@ struct kfont_slice {
 	unsigned char *end;
 };
 
-static inline uint16_t peek_uint16(uint8_t *data)
+static inline uint16_t peek_uint16(const uint8_t *data)
 {
 	return data[0] + (data[1] << 8);
 }
 
-static inline uint32_t peek_uint32(uint8_t *data)
+static inline uint32_t peek_uint32(const uint8_t *data)
 {
 	return data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
 }
