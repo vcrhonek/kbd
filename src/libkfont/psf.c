@@ -247,11 +247,21 @@ static enum kfont_error kfont_parse_legacy(struct kfont_slice *p, kfont_handler_
 		abort(); // TODO(dmage)
 	} else if (len % 256 == 0 || len % 256 == 40) {
 		if (len % 256 == 40) {
+			// FIXME(dmage)
 			fprintf(stderr, "kfont_parse_legacy: +40\n");
 			p->ptr += 40;
 		}
-		fprintf(stderr, "kfont_parse_legacy: height=%lu\n", (unsigned long)((p->end - p->ptr) / 256));
-		abort(); // TODO(dmage)
+
+		size_t height = (p->end - p->ptr) / 256;
+		// FIXME(dmage): height < UINT32_MAX?
+
+		font->width      = 8;
+		font->height     = height;
+		font->char_size  = height;
+		font->char_count = 256;
+		font->glyphs     = p->ptr;
+
+		return KFONT_ERROR_SUCCESS;
 	}
 	return KFONT_ERROR_BAD_MAGIC;
 }
