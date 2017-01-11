@@ -263,11 +263,20 @@ static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handle
 		return KFONT_ERROR_BAD_MAGIC;
 	}
 
+	// The content of the file should be released at the end of this function,
+	// and shouldn't be destroyed by kfont_append.
+	unsigned char *fileblob = font->blob;
+	font->blob = NULL;
+
+	// FIXME(dmage): free fileblob on error
+
+	bool first = true;
 	while (1) {
-		const unsigned char *filename = p->ptr;
+		const char *filename = p->ptr;
 		while (p->ptr != p->end) {
 			if (*p->ptr == '\0') {
-				return KFONT_ERROR_TRAILING_GARBAGE; // FIXME(dmage): \0 in text file
+				// FIXME(dmage): \0 in text file
+				return KFONT_ERROR_TRAILING_GARBAGE;
 			}
 			if (*p->ptr == '\n') {
 				*p->ptr = '\0';
@@ -276,19 +285,46 @@ static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handle
 			p->ptr++;
 		}
 		while (p->ptr == p->end) {
-			return KFONT_ERROR_TRAILING_GARBAGE; // FIXME(dmage): no \n at the end of the file
+			// FIXME(dmage): no \n at the end of the file
+			return KFONT_ERROR_TRAILING_GARBAGE;
 		}
 		p->ptr++;
 
-		fprintf(stderr, "TODO: load [%s]\n", filename);
+		// FIXME(dmage)
+		char fn[4096];
+		sprintf(fn, "../../data/partialfonts/%s", filename); // FIXME: find font
+		struct kfont_parse_options opts; // FIXME(dmage): init
+		kfont_handler_t out;
+		enum kfont_error err = kfont_load(fn, opts, &out);
+		if (err != KFONT_ERROR_SUCCESS) {
+			fprintf(stderr, "kfont_parse_combined: kfont_load error %d\n", err);
+			// FIXME(dmage)
+			abort();
+		}
+
+		if (first) {
+			memmove(font, out, sizeof(struct kfont_handler));
+			xfree(out);
+			first = false;
+		} else {
+			err = kfont_append(font, out);
+			if (err != KFONT_ERROR_SUCCESS) {
+				fprintf(stderr, "kfont_parse_combined: kfont_append error %d\n", err);
+				// FIXME(dmage)
+				abort();
+			}
+		}
 
 		if (p->ptr == p->end) {
 			break;
 		}
 	}
 
-	fprintf(stderr, "kfont_parse_combined\n");
-	abort(); // TODO(dmage)
+	if (fileblob) {
+		xfree(fileblob);
+	}
+
+	return KFONT_ERROR_SUCCESS;
 }
 
 static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t font)
@@ -452,10 +488,15 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 	        other->glyphs,
 	        font->char_size * other->char_count);
 
+	font->char_count = char_count;
 	font->glyphs = glyphs;
-	xfree(font->blob);
+
+	if (font->blob) {
+		xfree(font->blob);
+	}
 	font->blob = glyphs;
 
+	// FIXME(dmage): adjust font_pos at other->unimap_head
 	if (font->unimap_tail) {
 		font->unimap_tail->next = other->unimap_head;
 		font->unimap_tail = other->unimap_tail;
