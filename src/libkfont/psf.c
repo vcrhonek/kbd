@@ -290,7 +290,6 @@ static enum kfont_error kfont_parse_combined_content(struct kfont_slice *p, kfon
 		}
 		p->ptr++;
 
-
 		const char *filename;
 		if (!find_font(name, &filename)) {
 			fprintf(stderr, "kfont_parse_combined: find_font failed\n");
@@ -344,7 +343,7 @@ static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handle
 	// The content of the file should be released at the end of this function,
 	// and shouldn't be destroyed by kfont_append.
 	unsigned char *fileblob = font->blob;
-	font->blob = NULL;
+	font->blob              = NULL;
 
 	enum kfont_error err = kfont_parse_combined_content(p, font, find_font, free_filename);
 
@@ -510,7 +509,7 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 	if (font->char_count > UINT32_MAX - other->char_count) {
 		return KFONT_ERROR_FONT_LENGTH_TOO_BIG;
 	}
-	uint32_t char_count  = font->char_count + other->char_count;
+	uint32_t char_count   = font->char_count + other->char_count;
 	uint32_t other_offset = font->char_count;
 
 	if (char_count > SIZE_MAX / font->char_size) {
@@ -526,7 +525,7 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 	        font->char_size * other->char_count);
 
 	font->char_count = char_count;
-	font->glyphs = glyphs;
+	font->glyphs     = glyphs;
 
 	if (font->blob) {
 		xfree(font->blob);
@@ -535,7 +534,7 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 
 	if (font->unimap_tail) {
 		font->unimap_tail->next = other->unimap_head;
-		font->unimap_tail = other->unimap_tail;
+		font->unimap_tail       = other->unimap_tail;
 	} else {
 		font->unimap_head = other->unimap_head;
 		font->unimap_tail = other->unimap_tail;
