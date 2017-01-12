@@ -507,8 +507,15 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 		return KFONT_ERROR_FONT_METRICS_MISMATCH;
 	}
 
-	/* TODO(dmage): check overflows */
+	if (font->char_count > UINT32_MAX - other->char_count) {
+		return KFONT_ERROR_FONT_LENGTH_TOO_BIG;
+	}
 	uint32_t char_count  = font->char_count + other->char_count;
+	uint32_t other_offset = font->char_count;
+
+	if (char_count > SIZE_MAX / font->char_size) {
+		return KFONT_ERROR_FONT_LENGTH_TOO_BIG;
+	}
 	unsigned char *glyphs = xmalloc(font->char_size * char_count);
 
 	memmove(glyphs,
@@ -526,7 +533,6 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 	}
 	font->blob = glyphs;
 
-	// FIXME(dmage): adjust font_pos at other->unimap_head
 	if (font->unimap_tail) {
 		font->unimap_tail->next = other->unimap_head;
 		font->unimap_tail = other->unimap_tail;
@@ -534,6 +540,13 @@ enum kfont_error kfont_append(kfont_handler_t font, kfont_handler_t other)
 		font->unimap_head = other->unimap_head;
 		font->unimap_tail = other->unimap_tail;
 	}
+
+	struct kfont_unimap_node *unimap = other->unimap_head;
+	while (unimap) {
+		unimap->font_pos += other_offset;
+		unimap = unimap->next;
+	}
+
 	other->unimap_head = NULL;
 	other->unimap_tail = NULL;
 
