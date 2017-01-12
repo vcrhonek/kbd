@@ -253,7 +253,9 @@ static enum kfont_error kfont_parse_legacy(struct kfont_slice *p, kfont_handler_
 		}
 
 		size_t height = (p->end - p->ptr) / 256;
-		// FIXME(dmage): height < UINT32_MAX?
+		if (height > UINT32_MAX) {
+			return KFONT_ERROR_CHAR_SIZE_TOO_BIG;
+		}
 
 		font->width      = 8;
 		font->height     = height;
