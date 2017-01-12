@@ -266,23 +266,13 @@ static enum kfont_error kfont_parse_legacy(struct kfont_slice *p, kfont_handler_
 	return KFONT_ERROR_BAD_MAGIC;
 }
 
-static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handler_t font)
+static enum kfont_error kfont_parse_combined_content(struct kfont_slice *p, kfont_handler_t font,
+                                                     bool (*find_font)(const char *name, const char **filename),
+                                                     void (*free_filename)(const char *filename))
 {
-	const unsigned char magic[] = "# combine partial fonts\n";
-	if (!read_buf_magic(p, magic, sizeof(magic) - 1)) {
-		return KFONT_ERROR_BAD_MAGIC;
-	}
-
-	// The content of the file should be released at the end of this function,
-	// and shouldn't be destroyed by kfont_append.
-	unsigned char *fileblob = font->blob;
-	font->blob = NULL;
-
-	// FIXME(dmage): free fileblob on error
-
 	bool first = true;
 	while (1) {
-		const char *filename = p->ptr;
+		const char *name = (char *)p->ptr;
 		while (p->ptr != p->end) {
 			if (*p->ptr == '\0') {
 				// FIXME(dmage): \0 in text file
@@ -300,16 +290,25 @@ static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handle
 		}
 		p->ptr++;
 
-		// FIXME(dmage)
-		char fn[4096];
-		sprintf(fn, "../../data/partialfonts/%s", filename); // FIXME: find font
-		struct kfont_parse_options opts; // FIXME(dmage): init
+
+		const char *filename;
+		if (!find_font(name, &filename)) {
+			fprintf(stderr, "kfont_parse_combined: find_font failed\n");
+			// FIXME(dmage)
+			abort();
+		}
+
+		struct kfont_parse_options opts = { 0, 0, 0 };
 		kfont_handler_t out;
-		enum kfont_error err = kfont_load(fn, opts, &out);
+		enum kfont_error err = kfont_load(filename, opts, &out);
 		if (err != KFONT_ERROR_SUCCESS) {
 			fprintf(stderr, "kfont_parse_combined: kfont_load error %d\n", err);
 			// FIXME(dmage)
 			abort();
+		}
+
+		if (free_filename) {
+			free_filename(filename);
 		}
 
 		if (first) {
@@ -330,11 +329,30 @@ static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handle
 		}
 	}
 
+	return KFONT_ERROR_SUCCESS;
+}
+
+static enum kfont_error kfont_parse_combined(struct kfont_slice *p, kfont_handler_t font,
+                                             bool (*find_font)(const char *name, const char **filename),
+                                             void (*free_filename)(const char *filename))
+{
+	const unsigned char magic[] = "# combine partial fonts\n";
+	if (!read_buf_magic(p, magic, sizeof(magic) - 1)) {
+		return KFONT_ERROR_BAD_MAGIC;
+	}
+
+	// The content of the file should be released at the end of this function,
+	// and shouldn't be destroyed by kfont_append.
+	unsigned char *fileblob = font->blob;
+	font->blob = NULL;
+
+	enum kfont_error err = kfont_parse_combined_content(p, font, find_font, free_filename);
+
 	if (fileblob) {
 		xfree(fileblob);
 	}
 
-	return KFONT_ERROR_SUCCESS;
+	return err;
 }
 
 static enum kfont_error kfont_parse_psf1(struct kfont_slice *p, kfont_handler_t font)
@@ -464,9 +482,11 @@ enum kfont_error kfont_parse(unsigned char *buf, size_t size, struct kfont_parse
 		goto ret;
 	}
 
-	err = kfont_parse_combined(&p, *font);
-	if (err != KFONT_ERROR_BAD_MAGIC) {
-		goto ret;
+	if (opts.find_font) {
+		err = kfont_parse_combined(&p, *font, opts.find_font, opts.free);
+		if (err != KFONT_ERROR_BAD_MAGIC) {
+			goto ret;
+		}
 	}
 
 	err = kfont_parse_legacy(&p, *font);

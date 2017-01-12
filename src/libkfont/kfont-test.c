@@ -16,6 +16,15 @@ static void draw_bit(int bit)
 	}
 }
 
+char fn[4096];
+static bool find_font(const char *name, const char **filename)
+{
+	// FIXME: find font
+	sprintf(fn, "../../data/partialfonts/%s", name);
+	*filename = fn;
+	return true;
+}
+
 int main(int argc, char *argv[])
 {
 	set_progname(argv[0]);
@@ -28,7 +37,7 @@ int main(int argc, char *argv[])
 	kfont_handler_t font;
 	struct kfont_parse_options opts = {
 		.iunit = 0,
-		.find_font = NULL,
+		.find_font = find_font,
 		.free = NULL,
 	};
 	enum kfont_error err = kfont_load(argv[1], opts, &font);

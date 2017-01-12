@@ -49,7 +49,7 @@ struct kfont_parse_options {
 	/**
 	 * Releases buffer allocated by \ref find_font.
 	 */
-	void (*free)(char *filename);
+	void (*free)(const char *filename);
 };
 
 /**
