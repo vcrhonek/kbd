@@ -1,5 +1,6 @@
 AM_CPPFLAGS = \
-	-I$(srcdir) -I$(builddir) -I$(srcdir)/.. -I$(builddir)/.. \
+	-I$(srcdir) -I$(builddir) \
+	-I$(srcdir)/.. -I$(builddir)/.. \
 	-DDATADIR=\"$(datadir)\" -DLOCALEDIR=\"$(localedir)\" \
 	-U_GNU_SOURCE -D_FORTIFY_SOURCE=2 \
 	-funit-at-a-time
@@ -45,11 +46,12 @@ ksyms_headers = \
 libkeymap_la_SOURCES = \
 	$(headers) \
 	array.c \
-	findfile.c common.c kernel.c dump.c kmap.c diacr.c func.c summary.c loadkeys.c \
+	common.c kernel.c dump.c kmap.c diacr.c func.c summary.c loadkeys.c \
 	contextP.h \
 	parser.y parser.h analyze.l analyze.h \
 	modifiers.c modifiers.h \
 	ksyms.c ksyms.h $(ksyms_headers) \
+	findfile.c $(srcdir)/../findfileP.c $(srcdir)/../findfileP.h \
 	$(srcdir)/../nls.h $(srcdir)/../paths.h $(srcdir)/../kbd.h
 
 if BUILD_LIBKEYMAP
